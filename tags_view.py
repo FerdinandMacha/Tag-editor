@@ -4,54 +4,16 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gio, Pango
 import sys
+import tags_view_base
 import tags_storage
+import tags_config_view
 import os.path
 
 
-class TagsView(Gtk.ApplicationWindow):
+class TagsView(tags_view_base.TagsViewBase):
 
-    def __init__(self, app):
-        self.current_tag_file = ""
-
-        Gtk.Window.__init__(self, title="Media tagger", application=app)
-        self.set_default_size(640, 480)
-        self.set_border_width(10)
-
-        top_bar = Gtk.HeaderBar()
-        top_bar.set_show_close_button(True)
-        top_bar.props.title = self.current_tag_file
-        self.set_titlebar(top_bar)
-
-        self.tree_store = Gtk.TreeStore(str, bool, bool)
-        self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
-        self.sorted_model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        
-        tags_view = Gtk.TreeView(model=self.sorted_model)
-
-        renderer_books = Gtk.CellRendererText()
-        col_tags = Gtk.TreeViewColumn("Tags", renderer_books, text=0)
-        tags_view.append_column(col_tags)
-        col_tags.set_sort_column_id(0)
-
-        renderer_in_out = Gtk.CellRendererToggle()
-        column_in_out = Gtk.TreeViewColumn("Included", renderer_in_out, active=1, visible=2)
-        tags_view.append_column(column_in_out)
-        renderer_in_out.connect("toggled", self.on_toggled)
-
-        column_chkbox_visibility = Gtk.TreeViewColumn("Check visible", Gtk.CellRendererToggle())
-        column_chkbox_visibility.set_visible(False)
-        tags_view.append_column(column_chkbox_visibility)
-
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        scrolled.add(tags_view)
-        self.add(scrolled)
-        
-        bt_open_file = Gtk.FileChooserButton(title="Select a file containing tags")
-        bt_open_file.set_filename(self.current_tag_file)
-        bt_open_file.connect("file-set", self.on_bt_open_file_set, tags_view, top_bar)
-        bt_open_file.add_filter(TagFileFilter())
-        top_bar.pack_start(bt_open_file)
+    def __init__(self, _app):
+        tags_view_base.TagsViewBase.__init__(self, app=_app)
 
         
     def load_model(self, tag_file_name):
@@ -95,14 +57,6 @@ class TagsView(Gtk.ApplicationWindow):
     def on_bt_open_file_set(self, button, view, header_bar):
         self.reload_window(button.get_filename(), view, header_bar)
         
-
-class TagFileFilter(Gtk.FileFilter):
-    def __init__(self):
-        Gtk.FileFilter.__init__(self)
-        self.set_name("Tag files")
-        self.add_pattern("*-tags.html")
-
-
 
 class TagsApp(Gtk.Application):
 
@@ -154,13 +108,17 @@ class TagsApp(Gtk.Application):
             Gtk.STOCK_OPEN,
             Gtk.ResponseType.OK,
         )
-        dialog.add_filter(TagFileFilter())
+        dialog.add_filter(tags_view_base.TagFileFilter())
 
         response = dialog.run()
         result = dialog.get_filename()
         dialog.destroy()
 
         if response == Gtk.ResponseType.CANCEL:
+        
+            config_view = tags_config_view.get_tags_config_ui()
+            result = config_view.run()
+
             raise ValueError (TagsApp.C_PROVIDE_CONFIGURATION_MESSAGE)
         return result
 

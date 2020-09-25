@@ -48,4 +48,3 @@ def save_tags(tags_file_name, tags):
         f.write('<!DOCTYPE html>\n')
         for tag in tags:
                n = f.write('<div>'+tag+'</div>\n')        
-
