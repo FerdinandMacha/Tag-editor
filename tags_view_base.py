@@ -14,10 +14,10 @@ class TagsViewBase(Gtk.ApplicationWindow):
         self.set_default_size(640, 480)
         self.set_border_width(10)
 
-        top_bar = Gtk.HeaderBar()
-        top_bar.set_show_close_button(True)
-        top_bar.props.title = self.current_tag_file
-        self.set_titlebar(top_bar)
+        self.top_bar = Gtk.HeaderBar()
+        self.top_bar.set_show_close_button(True)
+        self.top_bar.props.title = self.current_tag_file
+        self.set_titlebar(self.top_bar)
 
         self.tree_store = Gtk.TreeStore(str, bool, bool)
         self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
@@ -46,14 +46,9 @@ class TagsViewBase(Gtk.ApplicationWindow):
         
         bt_open_file = Gtk.FileChooserButton(title="Select a file containing tags")
         bt_open_file.set_filename(self.current_tag_file)
-        bt_open_file.connect("file-set", self.on_bt_open_file_set, tags_view, top_bar)
+        bt_open_file.connect("file-set", self.on_bt_open_file_set, tags_view, self.top_bar)
         bt_open_file.add_filter(TagFileFilter())
-        top_bar.pack_start(bt_open_file)
-
-
-    # An abstract method
-    def on_bt_open_file_set(self, button, view, header_bar):
-        pass
+        self.top_bar.pack_start(bt_open_file)
 
 
 class TagFileFilter(Gtk.FileFilter):

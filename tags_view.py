@@ -8,6 +8,7 @@ import tags_view_base
 import tags_storage
 import tags_config_view
 import os.path
+import tags_model
 
 
 class TagsView(tags_view_base.TagsViewBase):
@@ -17,14 +18,12 @@ class TagsView(tags_view_base.TagsViewBase):
 
         
     def load_model(self, tag_file_name):
-        file_model = tags_storage.load_tags(tag_file_name)        
-        for i in range(len(file_model)):
-            piter = self.tree_store.append(None, [file_model[i][0], False, False])
-            j = 1
-            while j < len(file_model[i]):
-                file_model[i][j].append(True)
-                self.tree_store.append(piter, file_model[i][j])
-                j += 1
+        model = tags_storage.load_tags(tag_file_name)        
+        for tag_category in model:
+            piter = self.tree_store.append(None, [tag_category.category, False, False])
+            for tag in tag_category.tags:
+                tag.append(True) #append the hidden column ("check box showing") value
+                self.tree_store.append(piter, tag)
 
     def reload_window(self, tag_file_name, view, header_bar):
         self.current_tag_file = tag_file_name
@@ -78,7 +77,7 @@ class TagsApp(Gtk.Application):
 
     def show_tags_window(self, all_tags_file_name):
             try:
-                tags_storage.load_all_tags(all_tags_file_name)
+                tags_storage.load_tag_categories(all_tags_file_name)
                 win = TagsView(self)
                 win.show_all()
             except:
@@ -116,8 +115,8 @@ class TagsApp(Gtk.Application):
 
         if response == Gtk.ResponseType.CANCEL:
         
-            config_view = tags_config_view.get_tags_config_ui()
-            result = config_view.run()
+            config_view = tags_config_view.get_tags_config_ui(app=self)
+            result = "get res" #config_view.run()
 
             raise ValueError (TagsApp.C_PROVIDE_CONFIGURATION_MESSAGE)
         return result
