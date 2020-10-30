@@ -20,6 +20,7 @@ class TagsView(tags_view_base.TagsViewBase):
     def load_model(self, tag_file_name):
         model = tags_storage.load_tags(tag_file_name)        
         for tag_category in model:
+        
             piter = self.tree_store.append(None, [tag_category.category, False, False])
             for tag in tag_category.tags:
                 tag.append(True) #append the hidden column ("check box showing") value
