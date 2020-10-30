@@ -78,7 +78,7 @@ class TagsApp(Gtk.Application):
 
     def show_tags_window(self, all_tags_file_name):
             try:
-                tags_storage.load_tag_categories(all_tags_file_name)
+                tags_storage.load_tag_configuration(all_tags_file_name)
                 win = TagsView(self)
                 win.show_all()
             except:
