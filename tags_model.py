@@ -1,36 +1,44 @@
+from typing import Dict, List, Tuple, Type
 import logging
 
 class TagCategoryBaseItem:
-    def __init__(self, properties):
+    name: str
+    category: str
+
+    def __init__(self: TagCategoryBaseItem, properties: Tuple[str, int]):
         self.name, self.category = properties
 
 
 class TagItem(TagCategoryBaseItem):
-    def __init__(self, properties):
+    _included: bool
+
+    def __init__(self: TagItem, properties: Tuple[str, str]):
         super().__init__(properties)
         self._included = False
 
     @property
-    def included(self): 
+    def included(self: TagItem) -> bool : 
         return self._included 
 
     @included.setter 
-    def included(self, value): 
+    def included(self: TagItem, value: bool)-> None: 
         self._included = value 
 
 
 
 class TagCategoryBase(TagCategoryBaseItem):
-    def __init__(self, properties):
+    items: List[Type[TagCategoryBaseItem]]
+
+    def __init__(self: TagCategoryBase, properties: Tuple[str, str]):
         super().__init__(properties)
-        self.items = list() # items of TagCategoryBaseItem
+        self.items = list()
 
 
-    def create_tag_item(self, tag_name):
+    def create_tag_item(self: TagCategoryBase, tag_name: str)-> TagCategoryBaseItem:
         return TagCategoryBaseItem((tag_name, self))
 
 
-    def add_item(self, tag_name):
+    def add_item(self: TagCategoryBase, tag_name: str)-> Type[TagCategoryBaseItem]:
         result = self.create_tag_item(tag_name)
         self.items.append(result)
         return result
