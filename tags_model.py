@@ -1,18 +1,19 @@
+from __future__ import annotations
 from typing import Dict, List, Tuple, Type
-import logging
+
 
 class TagCategoryBaseItem:
     name: str
-    category: str
+    category: TagCategoryBase
 
-    def __init__(self: TagCategoryBaseItem, properties: Tuple[str, int]):
+    def __init__(self, properties: Tuple[str, TagCategoryBase])-> None:
         self.name, self.category = properties
 
 
 class TagItem(TagCategoryBaseItem):
     _included: bool
 
-    def __init__(self: TagItem, properties: Tuple[str, str]):
+    def __init__(self, properties: Tuple[str, TagCategoryBase])-> None:
         super().__init__(properties)
         self._included = False
 
@@ -27,9 +28,9 @@ class TagItem(TagCategoryBaseItem):
 
 
 class TagCategoryBase(TagCategoryBaseItem):
-    items: List[Type[TagCategoryBaseItem]]
+    items: List[TagCategoryBaseItem]
 
-    def __init__(self: TagCategoryBase, properties: Tuple[str, str]):
+    def __init__(self, properties: Tuple[str, TagCategoryBase])-> None:
         super().__init__(properties)
         self.items = list()
 
@@ -38,7 +39,7 @@ class TagCategoryBase(TagCategoryBaseItem):
         return TagCategoryBaseItem((tag_name, self))
 
 
-    def add_item(self: TagCategoryBase, tag_name: str)-> Type[TagCategoryBaseItem]:
+    def add_item(self: TagCategoryBase, tag_name: str)-> TagCategoryBaseItem:
         result = self.create_tag_item(tag_name)
         self.items.append(result)
         return result
@@ -47,6 +48,6 @@ class TagCategoryBase(TagCategoryBaseItem):
 
 class TagCategory(TagCategoryBase):
 
-    def create_tag_item(self, properties):
-        return TagItem((properties, self))
+    def create_tag_item(self: TagCategory, tag_name: str):
+        return TagItem((tag_name, self))
 
