@@ -1,5 +1,8 @@
-import tags_model
+from typing import cast
+from tags_model import TagCategoryBaseItem, TagItem, TagCategoryBase, TagCategory
 import logging
+
+from tags_model import TagCategoryBaseItem
 
 # contains the instances of tags_model.TagCategory
 tag_configuration = list()
@@ -20,7 +23,7 @@ def load_tag_configuration(config_file_name):
                 continue
 
             if is_heading:
-                tag_configuration.append(tags_model.TagCategoryBase((tag_line, None)))
+                tag_configuration.append(TagCategoryBase((tag_line, None)))
                 current_heading_index += 1
                 is_heading = False
             else :
@@ -48,17 +51,17 @@ def load_tags(tags_file_name):
 
     result = list()
     for tag_category in tag_configuration:
-        category_tags = tags_model.TagCategory((tag_category.name, None))
+        category_tags: TagCategory = TagCategory((tag_category.name, None))
         result.append(category_tags)
         for tag in tag_category.items:
-            current_tag = category_tags.add_item(tag.name)
-            current_tag.included = True if current_tags.pop(get_tag_key(tag.name), False) else False
+            current_tag: TagCategoryBaseItem = category_tags.add_item(tag.name)
+            cast(TagItem, current_tag).included = True if current_tags.pop(get_tag_key(tag.name), False) else False
 
     if len(current_tags):
-        additional = tags_model.TagCategory(('Additional tags', None))
+        additional: TagCategory = TagCategory(('Additional tags', None))
         for tag_name in current_tags:
-            current_tag = additional.add_item(tag_name)
-            current_tag.included = True
+            current_tag: TagCategoryBaseItem = additional.add_item(tag_name)
+            cast(TagItem, current_tag).included = True
 
 
     log_tags('Loaded file tags:', result)
