@@ -1,13 +1,12 @@
-from typing import Dict, Union, cast
 import logging
+from typing import Callable, Union
 
-from tags_model import TagCategoryBaseItem, TagItem, TagCategoryBase, TagCategory
-
+from tags_model import (TagCategory, TagCategoryBase, TagCategoryBaseItem, TagItem)
 
 tag_configuration: list[TagCategoryBase] = list()
 
 
-def load_tag_configuration(config_file_name: str)-> None:
+def load_tag_configuration(config_file_name: str) -> None:
     with open(config_file_name, mode='r', encoding='utf-8-sig') as f:
         is_heading: bool = True
         current_heading_index: int = -1
@@ -25,68 +24,72 @@ def load_tag_configuration(config_file_name: str)-> None:
                 tag_configuration.append(TagCategoryBase((tag_line, None)))
                 current_heading_index += 1
                 is_heading = False
-            else :
+            else:
                 tag_configuration[current_heading_index].add_item(tag_line)
 
     log_tags('Loaded configuration:', tag_configuration)
 
 
-def load_tags(tags_file_name: str)-> list[TagCategory]:
-    def load_current_tags()-> Dict[str, bool]:
+def load_tag_category(loaded_categories: list[TagCategory], tag_config: TagCategoryBase,
+                      included_predicate: Callable[[TagItem], bool]) -> TagCategory:
+
+    def initialize_tag(tag_category: TagCategory, tag_config: TagCategoryBaseItem,
+                       included_predicate: Callable[[TagItem], bool]) -> TagItem:
+        result: TagItem = TagItem((tag_config.name, tag_category))
+        # Use a predicate or an included property initializer?
+        result.included = included_predicate(result)
+        return result
+
+    result: TagCategory = TagCategory((tag_config.name, None))
+    loaded_categories.append(result)
+    result.items = [initialize_tag(result, tag, included_predicate) for tag in tag_config.items]
+    return result
+
+
+def load_tags(tags_file_name: str) -> list[TagCategory]:
+    def load_current_tags() -> set[str]:
         with open(tags_file_name, mode='r', encoding='utf-8-sig') as f:
             # Skip <!DOCTYPE html> header line
             next(f)
-            
+
             # strip '<div>' from left and '</div>\n' from right for the tag name
-            result = {get_tag_key(line[5:-7]): True for line in f}
+            result: set[str] = {get_tag_key(line[5:-7]) for line in f}
         return result
 
-    def get_tag_key(tag_name: str)-> str:
+    def get_tag_key(tag_name: str) -> str:
         return tag_name.upper()
 
-    def load_current_tag(tag_config: TagCategoryBase, loaded_tags: list[TagCategory], 
-        included_predicate: callable[[TagItem], bool])-> TagCategory:
-        result: TagCategory = TagCategory((tag_config.name, None))
-        loaded_tags.append(result)
-        for tag in tag_config.items:
-            current_tag: TagItem = cast(TagItem, result.add_item(tag.name))
-            current_tag.included = included_predicate(tag)
+    def unregister_tag(tag: str) -> bool:
+        result: bool = tag in current_tags
+        if result:
+            current_tags.remove(tag)
+        return result
 
-    current_tags: Dict[str, bool] = load_current_tags()
+    current_tags: set[str] = load_current_tags()
     result: list[TagCategory] = list()
     for tag_category in tag_configuration:
-        load_current_tag(tag_category, current_tags, 
-            lambda t: True if current_tags.pop(get_tag_key(t.name), False) else False)
-
-        """ category_tags: TagCategory = TagCategory((tag_category.name, None))
-        result.append(category_tags)
-        for tag in tag_category.items:
-            current_tag: TagItem = cast(TagItem, category_tags.add_item(tag.name))
-            current_tag.included = True if current_tags.pop(get_tag_key(tag.name), False) else False """
+        load_tag_category(result, tag_category, lambda tag: unregister_tag(get_tag_key(tag.name)))
 
     if len(current_tags):
-        additional: TagCategory = TagCategory(('Additional tags', None))
-        for tag_name in current_tags:
-            current_tag: TagItem = cast(TagItem, additional.add_item(tag_name))
-            current_tag.included = True
-
+        additional: TagCategoryBase = TagCategoryBase(('Additional tags', None))
+        additional.items = [TagCategoryBaseItem((tag_name, additional)) for tag_name in current_tags]
+        load_tag_category(result, additional, lambda t: True)
 
     log_tags('Loaded file tags:', result)
     return result
-                
 
-def save_tags(tags_file_name: str, tag_categories: list[str])-> None:
+
+def save_tags(tags_file_name: str, tag_categories: list[str]) -> None:
     with open(tags_file_name, mode='w', encoding='utf-8-sig') as f:
         f.write('<!DOCTYPE html>\n')
         for tag in tag_categories:
             _ = f.write(f'<div>{tag}</div>\n')
 
 
-
-def log_tags(list_description: str, tag_list: Union[list[TagCategoryBase], list[TagCategory]])-> None:
+def log_tags(list_description: str, tag_list: Union[list[TagCategoryBase], list[TagCategory]]) -> None:
     logging.debug(list_description)
     for category in tag_list:
-        [ logging.debug(f'{category.name} : {tag.__dict__}') for tag in category.items ]
+        [logging.debug(f'{category.name} : {tag.__dict__}') for tag in category.items]
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
