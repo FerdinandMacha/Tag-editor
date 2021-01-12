@@ -2,19 +2,23 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gio, Pango
-import sys
-import tags_view_base
-import tags_storage
-import tags_config_view
 import os.path
+import sys
+
+from gi.repository import Gio, Gtk, Pango
+
+import tags_config_view
 import tags_model
+import tags_storage
+import tags_view_base
 
 
-class TagsView(tags_view_base.TagsViewBase):
+@Gtk.Template(resource_path='/fmacha/gtk/tagseditor/tags_view.ui')
+class TagsView(Gtk.ApplicationWindow):
+    __gtype_name__ = 'TagsView'
 
-    def __init__(self, _app):
-        tags_view_base.TagsViewBase.__init__(self, app=_app)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         
     def load_model(self, tag_file_name):
@@ -63,8 +67,8 @@ class TagsApp(Gtk.Application):
     C_PROVIDE_CONFIGURATION_MESSAGE = "You have to provide the tags configuration."
 
     def __init__(self):
-        Gtk.Application.__init__(self)
-
+        super().__init__(application_id='fmacha.gtk.tagseditor',
+                         flags=Gio.ApplicationFlags.FLAGS_NONE)
 
     def do_activate(self):
         if len(sys.argv) == 2:
@@ -79,7 +83,7 @@ class TagsApp(Gtk.Application):
     def show_tags_window(self, all_tags_file_name):
             try:
                 tags_storage.load_tag_configuration(all_tags_file_name)
-                win = TagsView(self)
+                win = TagsView(application=self)
                 win.show_all()
             except:
                 dialog = Gtk.MessageDialog(
