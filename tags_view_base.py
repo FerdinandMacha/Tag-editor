@@ -10,8 +10,12 @@ class TagsViewBase(Gtk.ApplicationWindow):
     def __init__(self, app):
         self.current_tag_file = ""
 
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file("Window.glade")
+
         Gtk.Window.__init__(self, title="Media tagger", application=app)
-        self.set_default_size(640, 480)
+
+        """self.set_default_size(640, 480)
         self.set_border_width(10)
 
         self.top_bar = Gtk.HeaderBar()
@@ -37,8 +41,9 @@ class TagsViewBase(Gtk.ApplicationWindow):
 
         column_chkbox_visibility = Gtk.TreeViewColumn("Check visible", Gtk.CellRendererToggle())
         column_chkbox_visibility.set_visible(False)
-        tags_view.append_column(column_chkbox_visibility)
+        tags_view.append_column(column_chkbox_visibility)"""
 
+        tags_view=self.builder.get_object("tags_view")
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled.add(tags_view)
