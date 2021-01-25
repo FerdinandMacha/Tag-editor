@@ -13,13 +13,36 @@ import tags_storage
 import tags_view_base
 
 
-@Gtk.Template(resource_path='/fmacha/gtk/tagseditor/tags_view.ui')
+@Gtk.Template(filename='tags_view.ui')
 class TagsView(Gtk.ApplicationWindow):
     __gtype_name__ = 'TagsView'
+
+    tree_store = Gtk.Template.Child()
+    top_bar = Gtk.Template.Child()
+    tags_view = Gtk.Template.Child()
+    bt_open_file = Gtk.Template.Child()
+    include_col_renderer = Gtk.Template.Child()
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.current_tag_file = ""
+
+        self.top_bar.props.title = self.current_tag_file
+
+        self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
+        self.sorted_model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        
+        self.tags_view.set_model(self.sorted_model)
+
+        self.bt_open_file.set_filename(self.current_tag_file)
+        self.bt_open_file.connect("file-set", self.on_bt_open_file_set, self.tags_view, self.top_bar)
+        # bt_open_file.add_filter(TagFileFilter())
+
+        self.include_col_renderer.connect("toggled", self.on_toggled)
+
+ 
         
     def load_model(self, tag_file_name):
         model = tags_storage.load_tags(tag_file_name)        
@@ -67,7 +90,7 @@ class TagsApp(Gtk.Application):
     C_PROVIDE_CONFIGURATION_MESSAGE = "You have to provide the tags configuration."
 
     def __init__(self):
-        super().__init__(application_id='fmacha.gtk.tagseditor',
+        super().__init__(application_id='fmacha.gtk.tags-editor',
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
 
     def do_activate(self):

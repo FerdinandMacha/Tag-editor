@@ -37,23 +37,16 @@ class TagsViewBase(Gtk.ApplicationWindow):
         include_col_renderer = Gtk.CellRendererToggle()
         column_in_out = Gtk.TreeViewColumn("Included", include_col_renderer, active=1, visible=2)
         tags_view.append_column(column_in_out)
-        include_col_renderer.connect("toggled", self.on_toggled)
-
-        column_chkbox_visibility = Gtk.TreeViewColumn("Check visible", Gtk.CellRendererToggle())
+       column_chkbox_visibility = Gtk.TreeViewColumn("Check visible", Gtk.CellRendererToggle())
         column_chkbox_visibility.set_visible(False)
-        tags_view.append_column(column_chkbox_visibility)"""
+        tags_view.append_column(column_chkbox_visibility)
 
         tags_view=self.builder.get_object("tags_view")
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled.add(tags_view)
-        self.add(scrolled)
-        
-        bt_open_file = Gtk.FileChooserButton(title="Select a file containing tags")
-        bt_open_file.set_filename(self.current_tag_file)
-        bt_open_file.connect("file-set", self.on_bt_open_file_set, tags_view, self.top_bar)
-        bt_open_file.add_filter(TagFileFilter())
-        self.top_bar.pack_start(bt_open_file)
+        self.add(scrolled)"""
+
 
 
 class TagFileFilter(Gtk.FileFilter):
