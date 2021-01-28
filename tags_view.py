@@ -7,17 +7,16 @@ import sys
 
 from gi.repository import Gio, Gtk, Pango
 
-import tags_config_view
 import tags_model
 import tags_storage
-import tags_view_base
+from tags_model import (TagCategory, TagCategoryBase, TagCategoryBaseItem, TagItem)
 
 
 @Gtk.Template(filename='tags_view.ui')
 class TagsView(Gtk.ApplicationWindow):
     __gtype_name__ = 'TagsView'
 
-    tree_store = Gtk.Template.Child()
+    tree_store: Gtk.TreeStore = Gtk.Template.Child()
     top_bar = Gtk.Template.Child()
     tags_view = Gtk.Template.Child()
     bt_open_file = Gtk.Template.Child()
@@ -29,29 +28,23 @@ class TagsView(Gtk.ApplicationWindow):
 
         self.current_tag_file = ""
 
-        self.top_bar.props.title = self.current_tag_file
-
         self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
         self.sorted_model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        
         self.tags_view.set_model(self.sorted_model)
 
-        self.bt_open_file.set_filename(self.current_tag_file)
-        self.bt_open_file.connect("file-set", self.on_bt_open_file_set, self.tags_view, self.top_bar)
-        # bt_open_file.add_filter(TagFileFilter())
-
         self.include_col_renderer.connect("toggled", self.on_toggled)
+        self.bt_open_file.connect("file-set", self.on_bt_open_file_set, self.tags_view, self.top_bar)
 
  
+    def load_model(self, tag_file_name: str):
+        tags: list[TagCategory] = tags_storage.load_tags(tag_file_name)        
+        for tag_category in tags:
         
-    def load_model(self, tag_file_name):
-        model = tags_storage.load_tags(tag_file_name)        
-        for tag_category in model:
-        
-            piter = self.tree_store.append(None, [tag_category.category, False, False])
-            for tag in tag_category.tags:
-                tag.append(True) #append the hidden column ("check box showing") value
-                self.tree_store.append(piter, tag)
+            piter = self.tree_store.append(None, [tag_category.name, False, False])
+            for item in tag_category.items:
+                tag: TagItem = item
+                self.tree_store.append(piter, [tag.name, tag.included, True])
+
 
     def reload_window(self, tag_file_name, view, header_bar):
         self.current_tag_file = tag_file_name
@@ -85,6 +78,13 @@ class TagsView(Gtk.ApplicationWindow):
         self.reload_window(button.get_filename(), view, header_bar)
         
 
+class TagFileFilter(Gtk.FileFilter):
+    def __init__(self):
+        Gtk.FileFilter.__init__(self)
+        self.set_name("Tag files")
+        self.add_pattern("*-tags.html")
+
+
 class TagsApp(Gtk.Application):
 
     C_PROVIDE_CONFIGURATION_MESSAGE = "You have to provide the tags configuration."
@@ -99,7 +99,6 @@ class TagsApp(Gtk.Application):
             if os.path.isfile(sys.argv[1]):
                 self.show_tags_window(sys.argv[1])
         else:
-            print(TagsApp.C_PROVIDE_CONFIGURATION_MESSAGE)
             self.show_tags_window(self.choose_all_tags())
 
 
@@ -135,17 +134,13 @@ class TagsApp(Gtk.Application):
             Gtk.STOCK_OPEN,
             Gtk.ResponseType.OK,
         )
-        dialog.add_filter(tags_view_base.TagFileFilter())
+        dialog.add_filter(TagFileFilter())
 
         response = dialog.run()
         result = dialog.get_filename()
         dialog.destroy()
 
         if response == Gtk.ResponseType.CANCEL:
-        
-            config_view = tags_config_view.get_tags_config_ui(app=self)
-            result = "get res" #config_view.run()
-
             raise ValueError (TagsApp.C_PROVIDE_CONFIGURATION_MESSAGE)
         return result
 
