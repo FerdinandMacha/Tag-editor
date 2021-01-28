@@ -2,7 +2,12 @@
 <!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkListStore" id="tree_store">
+  <object class="GtkFileFilter" id="flt_tag_files">
+    <patterns>
+      <pattern>*-tags.html</pattern>
+    </patterns>
+  </object>
+  <object class="GtkTreeStore" id="tree_store">
     <columns>
       <!-- column-name colName -->
       <column type="gchararray"/>
@@ -11,23 +16,6 @@
       <!-- column-name colIsTag -->
       <column type="gboolean"/>
     </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">Category design</col>
-        <col id="1">False</col>
-        <col id="2">False</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Tag config design</col>
-        <col id="1">False</col>
-        <col id="2">True</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Tag included design</col>
-        <col id="1">True</col>
-        <col id="2">True</col>
-      </row>
-    </data>
   </object>
   <template class="TagsView" parent="GtkApplicationWindow">
     <property name="can-focus">False</property>
@@ -101,12 +89,13 @@
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="title">Media tagger</property>
-        <property name="subtitle" translatable="yes">Design subtitle</property>
+        <property name="has-subtitle">False</property>
         <property name="show-close-button">True</property>
         <child>
           <object class="GtkFileChooserButton" id="bt_open_file">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="filter">flt_tag_files</property>
             <property name="title" translatable="yes">Select a file containing tags</property>
           </object>
         </child>
