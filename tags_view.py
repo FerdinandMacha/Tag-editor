@@ -2,67 +2,49 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gio, Pango
-import sys
-import tags_storage
 import os.path
+import sys
+
+from gi.repository import Gio, Gtk, Pango
+
+import tags_model
+import tags_storage
+from tags_model import (TagCategory, TagCategoryBase, TagCategoryBaseItem, TagItem)
 
 
+@Gtk.Template(filename='tags_view.ui')
 class TagsView(Gtk.ApplicationWindow):
+    __gtype_name__ = 'TagsView'
 
-    def __init__(self, app):
+    tree_store: Gtk.TreeStore = Gtk.Template.Child()
+    top_bar = Gtk.Template.Child()
+    tags_view = Gtk.Template.Child()
+    bt_open_file = Gtk.Template.Child()
+    include_col_renderer = Gtk.Template.Child()
+
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
         self.current_tag_file = ""
 
-        Gtk.Window.__init__(self, title="Media tagger", application=app)
-        self.set_default_size(640, 480)
-        self.set_border_width(10)
-
-        top_bar = Gtk.HeaderBar()
-        top_bar.set_show_close_button(True)
-        top_bar.props.title = self.current_tag_file
-        self.set_titlebar(top_bar)
-
-        self.tree_store = Gtk.TreeStore(str, bool, bool)
         self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
         self.sorted_model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        self.tags_view.set_model(self.sorted_model)
+
+        self.include_col_renderer.connect("toggled", self.on_toggled)
+        self.bt_open_file.connect("file-set", self.on_bt_open_file_set, self.tags_view, self.top_bar)
+
+ 
+    def load_model(self, tag_file_name: str):
+        tags: list[TagCategory] = tags_storage.load_tags(tag_file_name)        
+        for tag_category in tags:
         
-        tags_view = Gtk.TreeView(model=self.sorted_model)
+            piter = self.tree_store.append(None, [tag_category.name, False, False])
+            for item in tag_category.items:
+                tag: TagItem = item
+                self.tree_store.append(piter, [tag.name, tag.included, True])
 
-        renderer_books = Gtk.CellRendererText()
-        col_tags = Gtk.TreeViewColumn("Tags", renderer_books, text=0)
-        tags_view.append_column(col_tags)
-        col_tags.set_sort_column_id(0)
-
-        renderer_in_out = Gtk.CellRendererToggle()
-        column_in_out = Gtk.TreeViewColumn("Included", renderer_in_out, active=1, visible=2)
-        tags_view.append_column(column_in_out)
-        renderer_in_out.connect("toggled", self.on_toggled)
-
-        column_chkbox_visibility = Gtk.TreeViewColumn("Check visible", Gtk.CellRendererToggle())
-        column_chkbox_visibility.set_visible(False)
-        tags_view.append_column(column_chkbox_visibility)
-
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        scrolled.add(tags_view)
-        self.add(scrolled)
-        
-        bt_open_file = Gtk.FileChooserButton(title="Select a file containing tags")
-        bt_open_file.set_filename(self.current_tag_file)
-        bt_open_file.connect("file-set", self.on_bt_open_file_set, tags_view, top_bar)
-        bt_open_file.add_filter(TagFileFilter())
-        top_bar.pack_start(bt_open_file)
-
-        
-    def load_model(self, tag_file_name):
-        file_model = tags_storage.load_tags(tag_file_name)        
-        for i in range(len(file_model)):
-            piter = self.tree_store.append(None, [file_model[i][0], False, False])
-            j = 1
-            while j < len(file_model[i]):
-                file_model[i][j].append(True)
-                self.tree_store.append(piter, file_model[i][j])
-                j += 1
 
     def reload_window(self, tag_file_name, view, header_bar):
         self.current_tag_file = tag_file_name
@@ -103,14 +85,13 @@ class TagFileFilter(Gtk.FileFilter):
         self.add_pattern("*-tags.html")
 
 
-
 class TagsApp(Gtk.Application):
 
     C_PROVIDE_CONFIGURATION_MESSAGE = "You have to provide the tags configuration."
 
     def __init__(self):
-        Gtk.Application.__init__(self)
-
+        super().__init__(application_id='fmacha.gtk.tags-editor',
+                         flags=Gio.ApplicationFlags.FLAGS_NONE)
 
     def do_activate(self):
         if len(sys.argv) == 2:
@@ -118,14 +99,13 @@ class TagsApp(Gtk.Application):
             if os.path.isfile(sys.argv[1]):
                 self.show_tags_window(sys.argv[1])
         else:
-            print(TagsApp.C_PROVIDE_CONFIGURATION_MESSAGE)
             self.show_tags_window(self.choose_all_tags())
 
 
     def show_tags_window(self, all_tags_file_name):
             try:
-                tags_storage.load_all_tags(all_tags_file_name)
-                win = TagsView(self)
+                tags_storage.load_tag_configuration(all_tags_file_name)
+                win = TagsView(application=self)
                 win.show_all()
             except:
                 dialog = Gtk.MessageDialog(
