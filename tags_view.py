@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 import gi
-
 gi.require_version("Gtk", "3.0")
+from gi.repository import Gio, Gtk
+
 import os.path
 import sys
 
-from gi.repository import Gio, Gtk, Pango
-
-import tags_model
 import tags_storage
 from tags_model import (TagCategory, TagCategoryBase, TagCategoryBaseItem, TagItem)
+
+import logging
 
 
 @Gtk.Template(filename='tags_view.ui')
@@ -17,23 +17,18 @@ class TagsView(Gtk.ApplicationWindow):
     __gtype_name__ = 'TagsView'
 
     tree_store: Gtk.TreeStore = Gtk.Template.Child()
-    top_bar = Gtk.Template.Child()
-    tags_view = Gtk.Template.Child()
-    bt_open_file = Gtk.Template.Child()
-    include_col_renderer = Gtk.Template.Child()
+    sorted_model: Gtk.TreeModelSort = Gtk.Template.Child()
+    top_bar: Gtk.HeaderBar = Gtk.Template.Child()
+    tags_view: Gtk.TreeView = Gtk.Template.Child()
+    bt_open_file: Gtk.FileChooserButton = Gtk.Template.Child()
 
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.current_tag_file = ""
+        self.current_tag_file: str = ""
 
-        self.sorted_model = Gtk.TreeModelSort(model=self.tree_store)
         self.sorted_model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        self.tags_view.set_model(self.sorted_model)
-
-        self.include_col_renderer.connect("toggled", self.on_toggled)
-        self.bt_open_file.connect("file-set", self.on_bt_open_file_set, self.tags_view, self.top_bar)
 
  
     def load_model(self, tag_file_name: str):
@@ -63,19 +58,25 @@ class TagsView(Gtk.ApplicationWindow):
         tags_storage.save_tags(self.current_tag_file, selected_tags)
 
 
-    def on_toggled(self, widget, path):
-        def get_tree_store_path(path_string):
-            sorted_iter = self.sorted_model.get_iter_from_string(path_string)
-            return self.sorted_model.convert_path_to_child_path(
-                self.sorted_model.get_path(sorted_iter))
-            
-        self.tree_store[get_tree_store_path(path)][1] = not self.sorted_model[path][1]
+    def get_tree_store_path(self, path_string):
+        sorted_iter = self.sorted_model.get_iter_from_string(path_string)
+        return self.sorted_model.convert_path_to_child_path(
+            self.sorted_model.get_path(sorted_iter))
 
+
+    @Gtk.Template.Callback()
+    def on_toggled(self, widget, path):
+        self.tree_store[self.get_tree_store_path(path)][1] = not self.sorted_model[path][1]
         self.save_to_file()
 
+    @Gtk.Template.Callback()
+    def name_changed(self, widget, path, text):
+        self.tree_store[self.get_tree_store_path(path)][0] = text
+        self.save_to_file()
 
-    def on_bt_open_file_set(self, button, view, header_bar):
-        self.reload_window(button.get_filename(), view, header_bar)
+    @Gtk.Template.Callback()
+    def on_bt_open_file_set(self, button):
+        self.reload_window(button.get_filename(), self.tags_view, self.top_bar)
         
 
 class TagFileFilter(Gtk.FileFilter):
@@ -91,7 +92,7 @@ class TagsApp(Gtk.Application):
 
     def __init__(self):
         super().__init__(application_id='fmacha.gtk.tags-editor',
-                         flags=Gio.ApplicationFlags.FLAGS_NONE)
+                         flags=Gio.ApplicationFlags.HANDLES_OPEN)
 
     def do_activate(self):
         if len(sys.argv) == 2:

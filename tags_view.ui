@@ -17,6 +17,9 @@
       <column type="gboolean"/>
     </columns>
   </object>
+  <object class="GtkTreeModelSort" id="sorted_model">
+    <property name="model">tree_store</property>
+  </object>
   <template class="TagsView" parent="GtkApplicationWindow">
     <property name="can-focus">False</property>
     <property name="border-width">10</property>
@@ -37,20 +40,25 @@
               <object class="GtkTreeView" id="tags_view">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
-                <property name="model">tree_store</property>
+                <property name="model">sorted_model</property>
                 <property name="search-column">0</property>
                 <child internal-child="selection">
                   <object class="GtkTreeSelection"/>
                 </child>
                 <child>
-                  <object class="GtkTreeViewColumn">
+                  <object class="GtkTreeViewColumn" id="col_name">
                     <property name="resizable">True</property>
                     <property name="title" translatable="yes">Name</property>
+                    <property name="clickable">True</property>
+                    <property name="sort-indicator">True</property>
+                    <property name="sort-column-id">0</property>
                     <child>
                       <object class="GtkCellRendererText">
                         <property name="placeholder-text">Nody</property>
+                        <signal name="edited" handler="name_changed" swapped="no"/>
                       </object>
                       <attributes>
+                        <attribute name="editable">2</attribute>
                         <attribute name="text">0</attribute>
                       </attributes>
                     </child>
@@ -61,8 +69,11 @@
                     <property name="sizing">fixed</property>
                     <property name="title" translatable="yes">Included</property>
                     <child>
-                      <object class="GtkCellRendererToggle" id="include_col_renderer"/>
+                      <object class="GtkCellRendererToggle" id="include_col_renderer">
+                        <signal name="toggled" handler="on_toggled" swapped="no"/>
+                      </object>
                       <attributes>
+                        <attribute name="visible">2</attribute>
                         <attribute name="active">1</attribute>
                       </attributes>
                     </child>
@@ -70,6 +81,7 @@
                 </child>
                 <child>
                   <object class="GtkTreeViewColumn">
+                    <property name="visible">False</property>
                     <property name="title" translatable="yes">Is Tag</property>
                   </object>
                 </child>
@@ -97,6 +109,7 @@
             <property name="can-focus">False</property>
             <property name="filter">flt_tag_files</property>
             <property name="title" translatable="yes">Select a file containing tags</property>
+            <signal name="file-set" handler="on_bt_open_file_set" swapped="no"/>
           </object>
         </child>
         <child>
