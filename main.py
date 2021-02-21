@@ -27,20 +27,16 @@ class TagsApp(Gtk.Application):
         super().__init__(application_id='fmacha.gtk.tags-editor',
                          flags=Gio.ApplicationFlags.HANDLES_OPEN)
 
-    def do_open(self, files, *hint):
-        import logging
-        logging.debug(files[0])
-        self.do_activate()
-        return 0
-
-    def do_activate(self):
-        if len(sys.argv) == 2:
+    def do_open(self, files: list[Gio.File], *hint):
+        if files.count == 2:
             # just a basic first check
-            if os.path.isfile(sys.argv[1]):
-                self.show_tags_window(sys.argv[1])
+            if files[1].query_exists():
+                self.show_tags_window(files[1].get_path())
         else:
             self.show_tags_window(self.choose_all_tags())
 
+        self.do_activate()
+        return 0
 
     def show_tags_window(self, all_tags_file_name):
             try:
